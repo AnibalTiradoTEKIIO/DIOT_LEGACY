@@ -32,7 +32,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
             "Exentos":0,
             "Importe Devoluciones": 0,
         };
-
+        var suitetax;
         const getInputData = (inputContext) => {
             const objScript = runtime.getCurrentScript();
             const recordID = objScript.getParameter({ name: SCRIPTS_INFO.MAP_REDUCE.PARAMETERS.RECORD_DIOT_ID });
@@ -48,7 +48,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                     }
                 });
                 var oneWorldFeature = runtime.isFeatureInEffect({ feature: RUNTIME.FEATURES.SUBSIDIARIES });
-                var suitetax = runtime.isFeatureInEffect({ feature: RUNTIME.FEATURES.SUITETAX });
+                suitetax = runtime.isFeatureInEffect({ feature: RUNTIME.FEATURES.SUITETAX });
                 log.debug('Config_Instance', { oneWorldFeature: oneWorldFeature, suitetax: suitetax });
                 // oneWorldFeature = false;
                 if (oneWorldFeature == false ) { // si no es oneWorld o SuiteTax
@@ -1066,6 +1066,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
             const response = { success: false, error: '', data: [] };
             try {
                 // log.debug({ title:'vendorbillInternalId', details:vendorbillInternalId });
+               if(suitetax==true){
                 var vendorbillSearchObj = search.create({
                     type: "vendorbill",
                     filters:
@@ -1106,35 +1107,79 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                                 label: "Tax Rate"
                             })
                         ]
+                    
                 });
+               
+            //    else{
+            //     var vendorbillSearchObj = search.create({
+            //         type: "vendorbill",
+            //         filters:
+            //             [
+            //                 ["mainline", "is", "F"],
+            //                 "AND",
+            //                 ["taxline", "is", "F"],
+            //                 "AND",
+            //                 ["internalid", "anyof", vendorbillInternalId]
+            //             ],
+            //         columns:
+            //             [
+            //                 search.createColumn({ name: "internalid", label: "ID interno" }),
+            //                 search.createColumn({ name: "item", label: "Artículo" }),
+            //                 search.createColumn({
+            //                     name: "amount",
+            //                     join: "item",
+            //                     label: "Base de impuesto (moneda extranjera)"
+            //                 }),
+            //                 search.createColumn({
+            //                     name: "taxcode",
+            //                     join: "item",
+            //                     label: "Código de impuesto"
+            //                 }),
+            //                 search.createColumn({
+            //                     name: "tax1amt",
+            //                     join: "item",
+            //                     label: "Importe de impuestos (moneda extranjera)"
+            //                 }),
+            //                 search.createColumn({
+            //                     name: "taxrate",
+            //                     join: "taxDetail",
+            //                     label: "item"
+            //                 })
+            //             ]
+                    
+            //     });
+            //    }
                 var vendorbillResult = vendorbillSearchObj.runPaged({
                     pageSize: 1000
-                });
+                }); }
                 if (vendorbillResult.count > 0) {
-                    vendorbillResult.pageRanges.forEach(function (pageRange) {
-                        var myPage = vendorbillResult.fetch({ index: pageRange.index });
-                        var taxes = [];
-                        myPage.data.forEach(function (result) {
-                            let taxItem = result.getValue({ name: 'item' });
-                            let taxBasis = result.getValue({ name: "taxbasis", join: "taxDetail" });
-                            let taxCode = result.getValue({ name: "taxcode", join: "taxDetail" });
-                            let taxType = result.getValue({ name: "taxtype", join: "taxDetail" });
-                            let taxAmount = result.getValue({ name: "taxfxamount", join: "taxDetail" });
-                            let taxRate = result.getValue({ name: "taxrate", join: "taxDetail" });
-                            let taxObj = {
-                                taxItem: taxItem,
-                                taxBasis: taxBasis,
-                                taxCode: taxCode,
-                                taxType: taxType,
-                                taxAmount: taxAmount,
-                                taxRate: taxRate
-                            };
-                            taxes.push(taxObj);
+                    if(suitetax==true){
+                        vendorbillResult.pageRanges.forEach(function (pageRange) {
+                            var myPage = vendorbillResult.fetch({ index: pageRange.index });
+                            var taxes = [];
+                            myPage.data.forEach(function (result) {
+                                let taxItem = result.getValue({ name: 'item' });
+                                let taxBasis = result.getValue({ name: "taxbasis", join: "taxDetail" });
+                                let taxCode = result.getValue({ name: "taxcode", join: "taxDetail" });
+                                let taxType = result.getValue({ name: "taxtype", join: "taxDetail" });
+                                let taxAmount = result.getValue({ name: "taxfxamount", join: "taxDetail" });
+                                let taxRate = result.getValue({ name: "taxrate", join: "taxDetail" });
+                                let taxObj = {
+                                    taxItem: taxItem,
+                                    taxBasis: taxBasis,
+                                    taxCode: taxCode,
+                                    taxType: taxType,
+                                    taxAmount: taxAmount,
+                                    taxRate: taxRate
+                                };
+                                taxes.push(taxObj);
+                            });
+                            // log.debug({ title:'taxes', details:taxes });
+                            response.success = true;
+                            response.data = taxes;
                         });
-                        // log.debug({ title:'taxes', details:taxes });
-                        response.success = true;
-                        response.data = taxes;
-                    });
+                    }
+             
                 } else {
                     let newError = generateError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', 'La factura id: ' + vendorbillInternalId + ' no contiene impuestos.');
                     generateRecordError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', vendorbillInternalId, vendorId, diotRecord);
@@ -1551,34 +1596,36 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                     filters.push("AND");
                     filters.push(["vendor.custentity_mx_rfc", "is", proveedorRFC]);
                 }
-                var vendorcreditSearchObj = search.create({
-                    type: "vendorcredit",
-                    filters: filters,
-                    columns:
-                        [
-                            search.createColumn({
-                                name: "internalid",
-                                sort: search.Sort.ASC,
-                                label: "ID interno"
-                            }),
-                            search.createColumn({ name: "tranid", label: "Número de documento" }),
-                            search.createColumn({
-                                name: "taxbasis",
-                                join: "taxDetail",
-                                label: "Base de impuesto (moneda extranjera)"
-                            }),
-                            search.createColumn({
-                                name: "taxcode",
-                                join: "taxDetail",
-                                label: "Código de impuesto"
-                            }),
-                            search.createColumn({
-                                name: "taxrate",
-                                join: "taxDetail",
-                                label: "Tax Rate"
-                            })
-                        ]
-                });
+                if(suitetax==true){
+                    var vendorcreditSearchObj = search.create({
+                        type: "vendorcredit",
+                        filters: filters,
+                        columns:
+                            [
+                                search.createColumn({
+                                    name: "internalid",
+                                    sort: search.Sort.ASC,
+                                    label: "ID interno"
+                                }),
+                                search.createColumn({ name: "tranid", label: "Número de documento" }),
+                                search.createColumn({
+                                    name: "taxbasis",
+                                    join: "taxDetail",
+                                    label: "Base de impuesto (moneda extranjera)"
+                                }),
+                                search.createColumn({
+                                    name: "taxcode",
+                                    join: "taxDetail",
+                                    label: "Código de impuesto"
+                                }),
+                                search.createColumn({
+                                    name: "taxrate",
+                                    join: "taxDetail",
+                                    label: "Tax Rate"
+                                })
+                            ]
+                    });
+                
                 const myPagedData = vendorcreditSearchObj.runPaged({
                     pageSize: 1000
                 });
@@ -1596,7 +1643,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                             }
                         });
                     });
-                }
+                } }
                 response.success = true;
             } catch (error) {
                 log.error({ title: 'extract_devoluciones', details: error });
@@ -1663,6 +1710,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
          * @returns The function `getExpenseReport` returns an object with the following properties:
          */
         function getExpenseReport(subsidiaria, periodo, recordID, transacciones) {
+            if(suitetax==true){
             const response = { success: false, error: '', quantityData: 0, data: [] };
             try {
                 // log.debug({ title:'ExpenseReport_Params', details:{subsidiaria: subsidiaria, periodo: periodo, recordID: recordID, transacciones: transacciones} });
@@ -1680,7 +1728,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                             "AND",
                             ["internalid", "anyof", transacciones]
                         ],
-                    columns:
+                        columns:
                         [
                             search.createColumn({
                                 name: "internalid",
@@ -1815,12 +1863,14 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                 } else {
                     response.success = true;
                 }
-            } catch (error) {
+            } 
+             catch (error) {
                 log.error({ title: 'getExpenseReport', details: error });
                 response.success = false;
                 response.error = error;
             }
             return response;
+        }
         }
 
         /**
@@ -2015,6 +2065,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
             const response = { success: false, error: '', data: {} };
             try {
                 log.debug({ title: 'extractJournalEntries_params', details: { subsidiaria: subsidiaria, periodo: periodo, recordID: recordID } });
+                if(suitetax==true){
                 var journalentrySearchObj = search.create({
                     type: "journalentry",
                     filters:
@@ -2067,7 +2118,7 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                                 label: "Tipo de impuesto"
                             })
                         ]
-                });
+                });}
                 var journalEntriesResult = journalentrySearchObj.runPaged({
                     pageSize: 1000
                 });
@@ -2092,10 +2143,12 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                             let jeTipoOperacion_text = result.getText({ name: 'custcol_fb_diot_operation_type' }) || '85 - Otros';
                             let jeTipoOperacion_Code = jeTipoOperacion_text.split(' ');
                             jeTipoOperacion_Code = jeTipoOperacion_Code[0];
+                            if(suitetax==true){
                             let taxCode = result.getValue({ name: "taxcode", join: "taxDetail" });
                             let taxType = result.getValue({ name: "taxtype", join: "taxDetail" });
                             let taxAmount = result.getValue({ name: "taxamount", join: "taxDetail" });
                             let taxRate = result.getValue({ name: "taxrate", join: "taxDetail" });
+                            }
                             let taxBasis;
                             let isDevolucion = false;
                             if (jeDebito) {
@@ -2104,7 +2157,8 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                                 isDevolucion = true;
                                 taxBasis = jeImpuestos;
                             }
-                            let taxObj = {
+                            if(suitetax==true){
+                                    let taxObj = {
                                 taxItem: '',
                                 taxBasis: taxBasis,
                                 taxCode: taxCode,
@@ -2115,6 +2169,11 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                                 transaccionCredito: jeCredito,
                                 transaccionImpuesto: jeImpuestos,
                                 isDevolucion: isDevolucion
+                            }
+                            
+                            }
+                            else {
+                                let taxObj;
                             }
                             // log.debug({ title:'taxObj', details:taxObj });
                             let jeFound = journalEntriesFound.findIndex((element) => element.vendorRFC == vendorRFC && element.transaccionTipoOperacion == jeTipoOperacion);
@@ -2157,7 +2216,8 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
                                 }
                                 log.debug({ title: 'jeObj', details: jeObj });
                                 journalEntriesFound.push(jeObj);
-                            } else {
+                            } 
+                            else {
                                 journalEntriesFound[jeFound].taxes.push(taxObj);
                             }
                         });
@@ -2228,3 +2288,45 @@ define(["N/error", 'N/runtime', 'N/search', 'N/url', 'N/record', 'N/file', 'N/re
         return { getInputData, map, reduce, summarize };
 
     });
+
+
+ 
+
+
+
+
+
+    var vendorbillSearchObj = search.create({
+        type: RECORD_INFO.VENDOR_BILL_RECORD.ID,
+        filters:
+            [
+                ["type", "anyof", "VendBill"],
+                "AND",
+                ["mainline", "is", "T"],
+                "AND",
+                ["status", "anyof", "VendBill:B", "VendBill:A"],
+                "AND",
+                ["applyingtransaction", "noneof", "@NONE@"]
+                , "AND",
+                ["internalid", "anyof", transacciones]
+            ],
+        columns:
+            [
+                search.createColumn({ name: "custbody_efx_fe_tax_json", label: "Tax JSON" }),
+            ]
+    });
+    var vendorbillResult = vendorbillSearchObj.runPaged({
+        pageSize: 1000
+    });
+    if (vendorbillResult.count > 0) {
+        let vendorbillFound = [];
+        let errorsTrans = [];
+        vendorbillResult.pageRanges.forEach(function (pageRange) {
+            var myPage = vendorbillResult.fetch({ index: pageRange.index });
+            myPage.data.forEach(function (result) {
+                var taxJson= result.getText({ name: RECORD_INFO.VENDOR_BILL_RECORD.FIELDS.TAX_JSON}); 
+                    log.debug({ title:'taxJsonTEXT', details: taxJson});
+            });
+        });
+        
+    }
