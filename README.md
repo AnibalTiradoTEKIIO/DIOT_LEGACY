@@ -10,7 +10,7 @@ previamente llenados
 --Es necesario configurar todos los códigos de impuesto (tax codes) en el campo DIOT-TIPO DE IMPUESTO 
 --Es necesario activar el standard vendor form en todas las bills y configurar el tipo de operacion
 --Es necesario activar el tax JSON en el standard vendor form 
-
+--Es necesario hacer un deploy del script correspondiente a taxJSON (comunmente EFX_FE_Tax_Fields) en journal entry y vendor bill
 
 
 ##DOCUMENTACIÓN#

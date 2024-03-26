@@ -281,12 +281,12 @@ define([
             details: datos.transaccionInternalId,
           });
           if (datos.transaccionInternalId) {
-            // let getVendorBillTaxes_result = getVendorBillTaxes(datos.transaccionInternalId, datos.vendorId, datos.diotRecord);
-            // // log.debug({ title:'getVendorBillTaxes', details:getVendorBillTaxes_result });
-            // if (getVendorBillTaxes_result.success == false) {
-            //     throw getVendorBillTaxes_result.error;
-            // }
-            // datos['taxes'] = getVendorBillTaxes_result.data;
+            let getVendorBillTaxes_result = getVendorBillTaxes(datos.transaccionInternalId, datos.vendorId, datos.diotRecord);
+            // log.debug({ title:'getVendorBillTaxes', details:getVendorBillTaxes_result });
+            if (getVendorBillTaxes_result.success == false) {
+                throw getVendorBillTaxes_result.error;
+            }
+            datos['taxes'] = getVendorBillTaxes_result.data;
           }
         }
         // log.debug({ title:'datos: ' + mapContext.key, details:datos });
@@ -1586,145 +1586,175 @@ define([
    * in the `getVendorBillTaxes` function, but it is passed to the `generateRecord
    * @returns The function `getVendorBillTaxes` returns an object with the following properties:
    */
-  // const getVendorBillTaxes = (vendorbillInternalId, vendorId, diotRecord) => {
-  //     const response = { success: false, error: '', data: [] };
-  //     try {
-  //         var suitetax = runtime.isFeatureInEffect({ feature: RUNTIME.FEATURES.SUITETAX });
-  //         // log.debug({ title:'vendorbillInternalId', details:vendorbillInternalId });
-  //        if(suitetax==true){
-  //         var vendorbillSearchObj = search.create({
-  //             type: "vendorbill",
-  //             filters:
-  //                 [
-  //                     ["mainline", "is", "F"],
-  //                     "AND",
-  //                     ["taxline", "is", "F"],
-  //                     "AND",
-  //                     ["internalid", "anyof", vendorbillInternalId]
-  //                 ],
-  //             columns:
-  //                 [
-  //                     search.createColumn({ name: "internalid", label: "ID interno" }),
-  //                     search.createColumn({ name: "item", label: "Artículo" }),
-  //                     search.createColumn({
-  //                         name: "taxbasis",
-  //                         join: "taxDetail",
-  //                         label: "Base de impuesto (moneda extranjera)"
-  //                     }),
-  //                     search.createColumn({
-  //                         name: "taxcode",
-  //                         join: "taxDetail",
-  //                         label: "Código de impuesto"
-  //                     }),
-  //                     search.createColumn({
-  //                         name: "taxtype",
-  //                         join: "taxDetail",
-  //                         label: "Tipo de impuesto"
-  //                     }),
-  //                     search.createColumn({
-  //                         name: "taxfxamount",
-  //                         join: "taxDetail",
-  //                         label: "Importe de impuestos (moneda extranjera)"
-  //                     }),
-  //                     search.createColumn({
-  //                         name: "taxrate",
-  //                         join: "taxDetail",
-  //                         label: "Tax Rate"
-  //                     })
-  //                 ]
+  const getVendorBillTaxes = (vendorbillInternalId, vendorId, diotRecord) => {
+    const response = { success: false, error: '', data: [] };
+    try {
+        var suitetax = runtime.isFeatureInEffect({ feature: RUNTIME.FEATURES.SUITETAX });
+        // log.debug({ title:'vendorbillInternalId', details:vendorbillInternalId });
+       if(suitetax){
+        var vendorbillSearchObj = search.create({
+            type: "vendorbill",
+            filters:
+                [
+                    ["mainline", "is", "F"],
+                    "AND",
+                    ["taxline", "is", "F"],
+                    "AND",
+                    ["internalid", "anyof", vendorbillInternalId]
+                ],
+            columns:
+                [
+                    search.createColumn({ name: "internalid", label: "ID interno" }),
+                    search.createColumn({ name: "item", label: "Artículo" }),
+                    search.createColumn({
+                        name: "taxbasis",
+                        join: "taxDetail",
+                        label: "Base de impuesto (moneda extranjera)"
+                    }),
+                    search.createColumn({
+                        name: "taxcode",
+                        join: "taxDetail",
+                        label: "Código de impuesto"
+                    }),
+                    search.createColumn({
+                        name: "taxtype",
+                        join: "taxDetail",
+                        label: "Tipo de impuesto"
+                    }),
+                    search.createColumn({
+                        name: "taxfxamount",
+                        join: "taxDetail",
+                        label: "Importe de impuestos (moneda extranjera)"
+                    }),
+                    search.createColumn({
+                        name: "taxrate",
+                        join: "taxDetail",
+                        label: "Tax Rate"
+                    })
+                ]
+            
+        });
+       }
+       else{
+        var vendorbillSearchObj = search.create({
+            type: "vendorbill",
+            filters:
+                [
+                    ["mainline", "is", "F"],
+                    "AND",
+                    ["taxline", "is", "F"],
+                    "AND",
+                    ["internalid", "anyof", vendorbillInternalId]
+                ],
+            columns:
+                [
+                    search.createColumn({ name: "internalid", label: "ID interno" }),
+                    search.createColumn({ name: "item", label: "Artículo" }),
+                    search.createColumn({ name: "custbody_efx_fe_tax_json", label: "Tax JSON" }),
+                    
+                ]
+            
+        });
+       }
+        var vendorbillResult = vendorbillSearchObj.runPaged({
+            pageSize: 1000
+        });
+        if (vendorbillResult.count > 0) {
+            if(suitetax==true){
+                vendorbillResult.pageRanges.forEach(function (pageRange) {
+                    var myPage = vendorbillResult.fetch({ index: pageRange.index });
+                    var taxes = [];
+                        myPage.data.forEach(function (result) {
+                            let taxItem = result.getValue({ name: 'item' });
+                            let taxBasis = result.getValue({ name: "taxbasis", join: "taxDetail" });
+                            let taxCode = result.getValue({ name: "taxcode", join: "taxDetail" });
+                            let taxType = result.getValue({ name: "taxtype", join: "taxDetail" });
+                            let taxAmount = result.getValue({ name: "taxfxamount", join: "taxDetail" });
+                            let taxRate = result.getValue({ name: "taxrate", join: "taxDetail" });
+                            let taxObj = {
+                                taxItem: taxItem,
+                                taxBasis: taxBasis,
+                                taxCode: taxCode,
+                                taxType: taxType,
+                                taxAmount: taxAmount,
+                                taxRate: taxRate
+                            };
+                            taxes.push(taxObj);
+                        });
+                        // log.debug({ title:'taxes', details:taxes });
+                        response.success = true;
+                        response.data = taxes;
+                    });
+            }
+            else{
+                vendorbillResult.pageRanges.forEach(function (pageRange) {
+                    var myPage = vendorbillResult.fetch({ index: pageRange.index });
+                    var taxes = [];
+                        myPage.data.forEach(function (result) {
+                            taxJson = result.getValue({
+                                name: RECORD_INFO.VENDOR_BILL_RECORD.FIELDS.TAX_JSON,
+                              });
+                            var taxJsonObject = JSON.parse(taxJson);
+                            let taxItem = result.getValue({ name: 'item' });
+                            let taxBasis;
+                            if(taxJsonObject.bases_iva["16"]){ 
+                                taxBasis=taxJsonObject.bases_iva["16"];
+                            }
+                            if(taxJsonObject.bases_iva["8"]){ 
+                                taxBasis=taxJsonObject.bases_iva["8"];
+                            }
+                            if(taxJsonObject.bases_iva["0"]){ 
+                                taxBasis=taxJsonObject.bases_iva["0"];
+                            }
+                            //let taxCode = result.getValue({ name: "taxcode" });
+                            let taxAmount;
+                            if(taxJsonObject.rates_iva_data["16"]){ 
+                                taxAmount=taxJsonObject.rates_iva_data["16"];
+                            }
+                            if(taxJsonObject.rates_iva_data["8"]){ 
+                                taxAmount=taxJsonObject.rates_iva_data["8"];
+                            }
+                            if(taxJsonObject.rates_iva_data["0"]){ 
+                                taxAmount=taxJsonObject.rates_iva_data["0"];
+                            }
+                             let taxRate;
+                             if(taxJsonObject.rates_iva_data["16"]){ 
+                                taxRate="16%"
+                            }
+                            if(taxJsonObject.rates_iva_data["8"]){ 
+                                taxRate="8%"
+                            }
+                            if(taxJsonObject.rates_iva_data["0"]){ 
+                                taxRate="0%"
+                            }
+                            let taxObj = {
+                                taxItem: taxItem,
+                                taxBasis: taxBasis,
+                                //taxCode: taxCode,
+                                //taxType: taxType, estos valores no se pueden sacar del taxJSON
+                                taxAmount: taxAmount,
+                                taxRate: taxRate
+                            };
+                            taxes.push(taxObj);
+                        });
+                        log.debug({ title:'taxes', details:taxes });
+                        response.success = true;
+                        response.data = taxes;
+                    });
+            } 
 
-  //         });
-  //        }
-  //        else{
-  //         var vendorbillSearchObj = search.create({
-  //             type: "vendorbill",
-  //             // filters:
-  //             //     [
-  //             //         ["mainline", "is", "F"],
-  //             //         "AND",
-  //             //         ["taxline", "is", "F"],
-  //             //         "AND",
-  //             //         ["internalid", "anyof", vendorbillInternalId]
-  //             //     ],
-  //             columns:
-  //                 [
-  //                     search.createColumn({ name: "internalid", label: "ID interno" }),
-  //                     search.createColumn({ name: "item",  label: "Artículo" }), // Usando join con el registro de ítems
-  //                     search.createColumn({ name: "taxcode",  label: "Código de impuesto" }),
-  //                     search.createColumn({ name: "amount",  label: "Importe de impuestos (moneda extranjera)" }),
-  //                     // search.createColumn({ name: "taxrate",  label: "item" })
-  //                 ]
-
-  //         });
-  //        }
-  //         var vendorbillResult = vendorbillSearchObj.runPaged({
-  //             pageSize: 1000
-  //         });
-  //         if (vendorbillResult.count > 0) {
-  //             if(suitetax==true){
-  //                 vendorbillResult.pageRanges.forEach(function (pageRange) {
-  //                     var myPage = vendorbillResult.fetch({ index: pageRange.index });
-  //                     var taxes = [];
-  //                         myPage.data.forEach(function (result) {
-  //                             let taxItem = result.getValue({ name: 'item' });
-  //                             let taxBasis = result.getValue({ name: "taxbasis", join: "taxDetail" });
-  //                             let taxCode = result.getValue({ name: "taxcode", join: "taxDetail" });
-  //                             let taxType = result.getValue({ name: "taxtype", join: "taxDetail" });
-  //                             let taxAmount = result.getValue({ name: "taxfxamount", join: "taxDetail" });
-  //                             let taxRate = result.getValue({ name: "taxrate", join: "taxDetail" });
-  //                             let taxObj = {
-  //                                 taxItem: taxItem,
-  //                                 taxBasis: taxBasis,
-  //                                 taxCode: taxCode,
-  //                                 taxType: taxType,
-  //                                 taxAmount: taxAmount,
-  //                                 taxRate: taxRate
-  //                             };
-  //                             taxes.push(taxObj);
-  //                         });
-  //                         // log.debug({ title:'taxes', details:taxes });
-  //                         response.success = true;
-  //                         response.data = taxes;
-  //                     });
-  //             }
-  //             else{
-  //                 vendorbillResult.pageRanges.forEach(function (pageRange) {
-  //                     var myPage = vendorbillResult.fetch({ index: pageRange.index });
-  //                     var taxes = [];
-  //                         myPage.data.forEach(function (result) {
-  //                             let taxItem = result.getValue({ name: 'item' });
-  //                             let taxBasis = result.getValue({ name: "amount" });
-  //                             let taxCode = result.getValue({ name: "taxcode" });
-  //                             let taxAmount = result.getValue({ name: "amount" });
-  //                              let taxRate = result.getValue({ name: "taxrate" });
-  //                             let taxObj = {
-  //                                 taxItem: taxItem,
-  //                                 taxBasis: taxBasis,
-  //                                 taxCode: taxCode,
-  //                                 //taxType: taxType,
-  //                                 taxAmount: taxAmount,
-  //                                 taxRate: taxRate
-  //                             };
-  //                             taxes.push(taxObj);
-  //                         });
-  //                         // log.debug({ title:'taxes', details:taxes });
-  //                         response.success = true;
-  //                         response.data = taxes;
-  //                     });
-  //             }
-
-  //         } else {
-  //             let newError = generateError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', 'La factura id: ' + vendorbillInternalId + ' no contiene impuestos.');
-  //             generateRecordError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', vendorbillInternalId, vendorId, diotRecord);
-  //             throw newError;
-  //         }
-  //     } catch (error) {
-  //         log.error({ title: 'getVendorBillTaxes', details: error });
-  //         response.success = false;
-  //         response.error = error;
-  //     }
-  //     return response;
-  // }
+        } else {
+            let newError = generateError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', 'La factura id: ' + vendorbillInternalId + ' no contiene impuestos.');
+            generateRecordError('ERROR NO IMPUESTOS', 'La factura no cuenta con impuestos registrados', vendorbillInternalId, vendorId, diotRecord);
+            throw newError;
+        }
+    } catch (error) {
+        log.error({ title: 'getVendorBillTaxes', details: error });
+        response.success = false;
+        response.error = error;
+    }
+    return response;
+}
 
   /**
    * The function `getApllyPayments` retrieves vendor payments applied to a specific vendor bill.
@@ -2568,24 +2598,45 @@ define([
                 name: RECORD_INFO.VENDOR_BILL_RECORD.FIELDS.TAX_JSON,
               });
               var taxJsonObject = JSON.parse(taxJson);
+              //let taxItem = result.getValue({ name: 'item' });
               let taxBasis;
-              if (taxJsonObject.bases_iva["16"])
-                taxBasis = taxJsonObject.bases_iva["16"];
-              if (taxJsonObject.bases_iva["8"])
-                taxBasis = taxJsonObject.bases_iva["8"];
-              if (taxJsonObject.bases_iva["0"])
-                taxBasis = taxJsonObject.bases_iva["0"];
-              // let taxCode = result.getValue({ name: "taxcode" });
+              if(taxJsonObject.bases_iva["16"]){ 
+                  taxBasis=taxJsonObject.bases_iva["16"];
+              }
+              if(taxJsonObject.bases_iva["8"]){ 
+                  taxBasis=taxJsonObject.bases_iva["8"];
+              }
+              if(taxJsonObject.bases_iva["0"]){ 
+                  taxBasis=taxJsonObject.bases_iva["0"];
+              }
+              //let taxCode = result.getValue({ name: "taxcode" });
               let taxAmount;
-              if (taxJsonObject.iva_total) taxAmount = taxJsonObject.iva_total;
-              // let taxRate = result.getValue({ name: "taxrate" });
+              if(taxJsonObject.rates_iva_data["16"]){ 
+                  taxAmount=taxJsonObject.rates_iva_data["16"];
+              }
+              if(taxJsonObject.rates_iva_data["8"]){ 
+                  taxAmount=taxJsonObject.rates_iva_data["8"];
+              }
+              if(taxJsonObject.rates_iva_data["0"]){ 
+                  taxAmount=taxJsonObject.rates_iva_data["0"];
+              }
+               let taxRate;
+               if(taxJsonObject.rates_iva_data["16"]){ 
+                  taxRate="16%"
+              }
+              if(taxJsonObject.rates_iva_data["8"]){ 
+                  taxRate="8%"
+              }
+              if(taxJsonObject.rates_iva_data["0"]){ 
+                  taxRate="0%"
+              }
               let objTax = {
                 // taxExpense: taxExpense,
                 taxBasis: taxBasis,
                 // taxCode: taxCode,
                 // taxType: taxType,
                 taxAmount: taxAmount,
-                // taxRate: taxRate
+                taxRate: taxRate
               };
             }
             log.debug({ title: "objTax", details: objTax });
@@ -3150,7 +3201,7 @@ define([
                 isDevolucion: isDevolucion,
               };
             }
-            // log.debug({ title:'taxObj', details:taxObj });
+            log.debug({ title:'taxObj', details:taxObj });
             let jeFound = journalEntriesFound.findIndex(
               (element) =>
                 element.vendorRFC == vendorRFC &&
