@@ -1660,7 +1660,7 @@ define([
             pageSize: 1000
         });
         if (vendorbillResult.count > 0) {
-            if(suitetax==true){
+            if(suitetax){
                 vendorbillResult.pageRanges.forEach(function (pageRange) {
                     var myPage = vendorbillResult.fetch({ index: pageRange.index });
                     var taxes = [];
@@ -2202,6 +2202,7 @@ define([
     log.debug({ title: "SUITETAX EN EXTRACT_DEVOLUCIONES", details: suitetax });
     const response = { success: false, error: "", totalDevoluciones: "" };
     try {
+      let taxCode;
       // log.debug({ title:'extract_devoluciones_PARAMAS', details:{subsidiaria: subsidiaria, periodo: periodo, proveedor: proveedor, tipoOperacion: tipoOperacion} });
       // log.debug({ title:'taxCodes', details:taxCodes });
       let filters = [
@@ -2287,7 +2288,7 @@ define([
           var myPage = myPagedData.fetch({ index: pageRange.index });
           myPage.data.forEach(function (result) {
             if (suitetax) {
-              let taxCode = result.getValue({
+               taxCode = result.getValue({
                 name: "taxcode",
                 join: "taxDetail",
               });
@@ -2393,6 +2394,7 @@ define([
     var suitetax = runtime.isFeatureInEffect({
       feature: RUNTIME.FEATURES.SUITETAX,
     });
+    let taxCode;
     log.debug({ title: "SUITETAX EN GET EXPENSEREPORT", details: suitetax });
     try {
       // log.debug({ title:'ExpenseReport_Params', details:{subsidiaria: subsidiaria, periodo: periodo, recordID: recordID, transacciones: transacciones} });
@@ -2568,7 +2570,7 @@ define([
                 join: "taxDetail",
               });
               let taxExpense = result.getValue({ name: "expensecategory" });
-              let taxCode = result.getValue({
+               taxCode = result.getValue({
                 name: "taxcode",
                 join: "taxDetail",
               });
@@ -2960,6 +2962,7 @@ define([
       var suitetax = runtime.isFeatureInEffect({
         feature: RUNTIME.FEATURES.SUITETAX,
       });
+      let taxCode
       if (suitetax) {
         var journalentrySearchObj = search.create({
           type: "journalentry",
@@ -3134,7 +3137,7 @@ define([
             let jeTipoOperacion_Code = jeTipoOperacion_text.split(" ");
             jeTipoOperacion_Code = jeTipoOperacion_Code[0];
             if (suitetax) {
-              let taxCode = result.getValue({
+              taxCode = result.getValue({
                 name: "taxcode",
                 join: "taxDetail",
               });
