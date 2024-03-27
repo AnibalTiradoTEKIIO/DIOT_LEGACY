@@ -21,3 +21,4 @@ Para cumplir el objetivo del taxJSON , se creó una búsqueda que lo extrae, lue
 Se tuvieron errores con todas las búsquedas que incluyen el campo "taxDetails", se usó una búsqueda que regresa solo el taxJSON y se usan sus valores para sustituir los que regresa el taxDetails. 
 
 ERROR:  en la construccion del  txt (reduce) se cambio el rates_iva_Data (IMPORTE DEL IMPUESTO) por bases_iva (BASE DEL IMPUESTO) era un error crucial pues de ahi depende toda la construccion de la DIOT. El SAT indica que se deben poner las bases del impuesto de todos los montos pagados con la tasa indicada(Es decir el monto antes de impuestos). Nosotros estábamos poniendo el importe del impuesto (El porcentaje de la base), que es el que se le suma a la base para obtener el importe total. 
+ERROR: La variable let taxCode, al estar declarada dentro de algunos bloques if(suitetax) su declaración no era efectiva en demás partes del método, esto se corrigió declarandola al principio del método. 
