@@ -737,57 +737,57 @@ define([
         });
         log.debug({ title: "IEPS TOTAL", details: taxJsonObject.ieps_total });
         if (
-          taxJsonObject.rates_iva_data["16"] &&
+          taxJsonObject.bases_iva["16"] &&
           generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL
         ) {
           log.debug({
             title: "VALOR DE IVA 16:",
-            details: taxJsonObject.rates_iva_data["16"],
+            details: taxJsonObject.bases_iva["16"],
           });
           log.debug({
             title: "VALOR DE IVA 16TYPE:",
-            details: typeof taxJsonObject.rates_iva_data["16"],
+            details: typeof taxJsonObject.bases_iva["16"],
           });
-          diotLine += Math.ceil(parseFloat(taxJsonObject.rates_iva_data["16"]));
+          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]));
           sumatorias["IVA al 16%"] += Math.ceil(
-            parseFloat(taxJsonObject.rates_iva_data["16"])
+            parseFloat(taxJsonObject.bases_iva["16"])
           );
         }
         diotLine += "|||||";
-        if (taxJsonObject.rates_iva_data["8"]) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.rates_iva_data["8"]));
+        if (taxJsonObject.bases_iva["8"]) {
+          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]));
           sumatorias["IVA al 8%"] += Math.ceil(
-            parseFloat(taxJsonObject.rates_iva_data["8"])
+            parseFloat(taxJsonObject.bases_iva["8"])
           );
         }
         diotLine += "|||";
         if (
-          taxJsonObject.rates_iva_data["16"] &&
+          taxJsonObject.bases_iva["16"] &&
           generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO
         ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.rates_iva_data["16"]));
+          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]));
           sumatorias["IVA al 16%"] += Math.ceil(
-            parseFloat(taxJsonObject.rates_iva_data["16"])
+            parseFloat(taxJsonObject.bases_iva["16"])
           );
         }
         diotLine += "||||";
         if (
-          taxJsonObject.rates_iva_data["0"] &&
+          taxJsonObject.bases_iva["0"] &&
           generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO
         ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.rates_iva_data["0"]));
+          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]));
           sumatorias["IVA al 0%"] += Math.ceil(
-            parseFloat(taxJsonObject.rates_iva_data["0"])
+            parseFloat(taxJsonObject.bases_iva["0"])
           );
         }
         diotLine += "|";
         if (
-          taxJsonObject.rates_iva_data["0"] &&
+          taxJsonObject.bases_iva["0"] &&
           generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL
         ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.rates_iva_data["0"]));
+          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]));
           sumatorias["IVA al 0%"] += Math.ceil(
-            parseFloat(taxJsonObject.rates_iva_data["0"])
+            parseFloat(taxJsonObject.bases_iva["0"])
           );
         }
         diotLine += "|";
