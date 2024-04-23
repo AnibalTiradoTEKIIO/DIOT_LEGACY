@@ -357,7 +357,9 @@ define([
       feature: RUNTIME.FEATURES.SUITETAX,
     });
     log.debug({ title: "SUITETAX EN REDUCE", details: suitetax });
+  
     try {
+      
       let objLine;
       log.debug({
         title: "Status antes de actualizar",
@@ -375,6 +377,18 @@ define([
         title: "reduce Data: " + key,
         details: { long: values.length, data: values },
       });
+      const parsedValues = values.map(item => JSON.parse(item));
+      log.audit({
+      title: "parsedValues",
+      details: parsedValues,
+    });
+    const transaccionInternalIds = parsedValues.map(item => item.transaccionInternalId);
+   
+    // Log para verificar el arreglo resultante
+    log.audit({
+      title: "Transaccion Internal IDs",
+      details: transaccionInternalIds,
+    });
       // log.audit({ title: 'reduce Data DBG: ', details: values['generatedNewError']});
       // log.audit({ title: 'reduce Data DBG2: ', details: values[0].generatedNewError});
       // obtencion de impuestos configurados a reportar
@@ -660,8 +674,11 @@ define([
         }
       }
 
-      if (suitetax == false) {
+      if (!suitetax) {
         let taxJson;
+        var iva16=0;
+        var iva8=0;
+        var iva0=0;
         log.audit({ title: "Dentro del if(suitetax==false)" });
         log.debug({title: "vendor value", details:generalInfo.vendorTipoTercero})
         let registerData = search.lookupFields({
@@ -691,7 +708,7 @@ define([
             "AND",
             ["applyingtransaction", "noneof", "@NONE@"],
             "AND",
-            ["internalid", "anyof", generalInfo.transaccionInternalId],
+            ["internalid", "anyof", transaccionInternalIds],
           ],
           columns: [
             search.createColumn({
@@ -704,6 +721,7 @@ define([
           pageSize: 1000,
         });
         var tax_json_array = [];
+        var taxJsonObject;
         if (vendorbillResult.count > 0) {
           vendorbillResult.pageRanges.forEach(function (pageRange) {
             var myPage = vendorbillResult.fetch({ index: pageRange.index });
@@ -717,8 +735,12 @@ define([
                 taxJson = result.getValue({
                   name: RECORD_INFO.VENDOR_BILL_RECORD.FIELDS.TAX_JSON,
                 });
-                tax_json_array.push(taxJson);
+                taxJsonObject = JSON.parse(taxJson);
+                iva16+=Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]))
+                iva8+=Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]))
+                iva0+=Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]))
                 log.debug({ title: "taxJsonValue", details: taxJson });
+                log.debug({ title: "ivas", details:{iva16,iva8,iva0} });
               } else {
                 log.debug({
                   title: "Error",
@@ -729,17 +751,13 @@ define([
           });
         }
         // tax_json_array.forEach((taxJson)=>{
-        var taxJsonObject = JSON.parse(taxJson);
         log.debug({ title: "taxJsonObjectDetails", details: taxJsonObject });
         log.debug({
           title: "taxJsonObjectDetailsTYPE",
           details: typeof taxJsonObject,
         });
         log.debug({ title: "IEPS TOTAL", details: taxJsonObject.ieps_total });
-        if (
-          taxJsonObject.bases_iva["16"] &&
-          generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL
-        ) {
+        if ((iva16!=0) && generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL ) {
           log.debug({
             title: "VALOR DE IVA 16:",
             details: taxJsonObject.bases_iva["16"],
@@ -748,47 +766,28 @@ define([
             title: "VALOR DE IVA 16TYPE:",
             details: typeof taxJsonObject.bases_iva["16"],
           });
-          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]));
-          sumatorias["IVA al 16%"] += Math.ceil(
-            parseFloat(taxJsonObject.bases_iva["16"])
-          );
+          diotLine += iva16;
+          sumatorias["IVA al 16%"] += iva16
         }
         diotLine += "|||||";
-        if (taxJsonObject.bases_iva["8"]) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]));
-          sumatorias["IVA al 8%"] += Math.ceil(
-            parseFloat(taxJsonObject.bases_iva["8"])
-          );
+        if (iva8!=0) {
+          diotLine += iva8;
+          sumatorias["IVA al 8%"] += iva8;
         }
         diotLine += "|||";
-        if (
-          taxJsonObject.bases_iva["16"] &&
-          generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO
-        ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]));
-          sumatorias["IVA al 16%"] += Math.ceil(
-            parseFloat(taxJsonObject.bases_iva["16"])
-          );
+        if ((iva16!==0) &&generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO) {
+          diotLine += iva16
+          sumatorias["IVA al 16%"] += ia16
         }
         diotLine += "||||";
-        if (
-          taxJsonObject.bases_iva["0"] &&
-          generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO
-        ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]));
-          sumatorias["IVA al 0%"] += Math.ceil(
-            parseFloat(taxJsonObject.bases_iva["0"])
-          );
+        if ((iva0!=0) &&generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.EXTRANJERO ) {
+          diotLine += iva0
+          sumatorias["IVA al 0%"] += iva0
         }
         diotLine += "|";
-        if (
-          taxJsonObject.bases_iva["0"] &&
-          generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL
-        ) {
-          diotLine += Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]));
-          sumatorias["IVA al 0%"] += Math.ceil(
-            parseFloat(taxJsonObject.bases_iva["0"])
-          );
+        if ((iva0!=0) && generalInfo.vendorTipoTercero == LISTS.TIPO_TERCERO.VALUES.NACIONAL ) {
+          diotLine += iva0
+          sumatorias["IVA al 0%"] += iva0
         }
         diotLine += "|";
         if (
@@ -860,7 +859,7 @@ define([
         "IVA al 16%": "$" + formatNumberWithCommas(sumatorias["IVA al 16%"]),
         "IVA al 8%": "$" + formatNumberWithCommas(sumatorias["IVA al 8%"]),
         "IVA al 0%": "$" + formatNumberWithCommas(sumatorias["IVA al 0%"]),
-        Exentos: "$" + formatNumberWithCommas(sumatorias["Exentos"]),
+        "Exentos": "$" + formatNumberWithCommas(sumatorias["Exentos"]),
         "Importe Devoluciones":
           "$" + formatNumberWithCommas(sumatorias["Importe Devoluciones"]),
       };
@@ -877,7 +876,7 @@ define([
       //     value:sumatorias
       // });
       log.debug({ title: "Sumatorias de impuestos", details: sumatorias });
-      // log.debug({ title:'diotLine', details:diotLine });
+      log.debug({ title:'diotLine', details:diotLine });
       objLine = {
         linea: diotLine,
         success: true,
