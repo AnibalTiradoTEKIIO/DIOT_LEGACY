@@ -736,9 +736,9 @@ define([
                   name: RECORD_INFO.VENDOR_BILL_RECORD.FIELDS.TAX_JSON,
                 });
                 taxJsonObject = JSON.parse(taxJson);
-                iva16+=Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]))
-                iva8+=Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]))
-                iva0+=Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]))
+                if(taxJsonObject.bases_iva["16"])iva16+=Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]))
+                if(taxJsonObject.bases_iva["8"])iva8+=Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]))
+                if(taxJsonObject.bases_iva["0"])iva0+=Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]))
                 log.debug({ title: "taxJsonValue", details: taxJson });
                 log.debug({ title: "ivas", details:{iva16,iva8,iva0} });
               } else {
