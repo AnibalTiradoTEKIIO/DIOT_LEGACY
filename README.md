@@ -11,6 +11,7 @@ previamente llenados
 --Es necesario activar el standard vendor form en todas las bills y configurar el tipo de operacion
 --Es necesario activar el tax JSON en el standard vendor form 
 --Es necesario hacer un deploy del script correspondiente a taxJSON (comunmente EFX_FE_Tax_Fields) en journal entry y vendor bill
+--Es necesario configurar los parámetros del script "Genera DIOT MR" Sobre todo el de folder raíz. Para esto se debe de crear un folder donde sea ( de preferencia en el nombre especificar que es para los archivos txt de la diot), copiar el id interno del folder, y poner el numero en los parámetros del script
 
 
 ##DOCUMENTACIÓN#

@@ -1265,7 +1265,7 @@ define([
           search.createColumn({
             name: "internalid",
             join: "vendor",
-            label: "Proveedor ID",
+            label: "Proveedor ID", 
           }),
           search.createColumn({
             name: "custentity_mx_rfc",
@@ -1273,7 +1273,8 @@ define([
             label: "RFC",
           }),
           search.createColumn({
-            name: "custentity_efx_fe_numregidtrib",
+            // name: "custentity_efx_fe_numregidtrib",
+            name: "custentityfb_diot_numregidtrib",
             join: "vendor",
             label: "NumRegIdTrib",
           }),
