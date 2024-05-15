@@ -680,6 +680,8 @@ define([
         var iva16=0;
         var iva8=0;
         var iva0=0;
+        let exento_total=0;
+        let retencion_total=0;
         log.audit({ title: "Dentro del if(suitetax==false)" });
         log.debug({title: "vendor value", details:generalInfo.vendorTipoTercero})
         let registerData = search.lookupFields({
@@ -740,6 +742,9 @@ define([
                 if(taxJsonObject.bases_iva["16"])iva16+=Math.ceil(parseFloat(taxJsonObject.bases_iva["16"]))
                 if(taxJsonObject.bases_iva["8"])iva8+=Math.ceil(parseFloat(taxJsonObject.bases_iva["8"]))
                 if(taxJsonObject.bases_iva["0"])iva0+=Math.ceil(parseFloat(taxJsonObject.bases_iva["0"]))
+                if(taxJsonObject.retencion_total)retencion_total+=Math.ceil(parseFloat(taxJsonObject.retencion_total))
+                if(taxJsonObject.exento_total)exento_total+=Math.ceil(parseFloat(taxJsonObject.exento_total))
+               
                 log.debug({ title: "taxJsonValue", details: taxJson });
                 log.debug({ title: "ivas", details:{iva16,iva8,iva0} });
               } else {
