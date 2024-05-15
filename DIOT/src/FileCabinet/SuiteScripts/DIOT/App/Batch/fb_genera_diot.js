@@ -614,6 +614,7 @@ define([
               let suma_impuestos_response = suma_impuestos(
                 retenciones_response.dataClear
               );
+            
               log.debug({
                 title: "suma_impuestos_response",
                 details: suma_impuestos_response,
@@ -624,7 +625,7 @@ define([
               ) {
                 // if (suma_impuestos_response.success == true && suma_impuestos_response.totalRetenciones) {
                 diotLine += Math.ceil(
-                  parseFloat(suma_impuestos_response.totalImpuestos)
+                  parseFloat(suma_impuestos_response.totalIVA)
                 );
                 // diotLine += suma_impuestos_response.totalRetenciones;
               }
@@ -1896,6 +1897,7 @@ define([
       impuestos.forEach((element_impuesto, index_impuesto) => {
         // log.debug({ title:'impuesto ' + index_impuesto, details:element_impuesto });
         let sumaImpuesto = 0;
+        let sumaIVA=0;
         let impuestoRate = "";
         values.forEach((element_factura, index_factura) => {
           let factura = JSON.parse(element_factura);
@@ -1921,6 +1923,8 @@ define([
                     factura.hasOwnProperty("isJournalEntry"))
                 ) {
                   sumaImpuesto = sumaImpuesto * 1 + tax.taxBasis * 1;
+                  sumaIVA=sumaIVA*1 + Math.abs(tax.taxAmount)*1;
+                  log.debug({title:"sumaIVA?????????",details:sumaIVA});
                 } else {
                   let pagosObj = factura.payments;
                   let pagosIds = Object.keys(pagosObj);
@@ -1955,27 +1959,32 @@ define([
         impuestosFound.push({
           impuesto: element_impuesto,
           sumaImpuesto: sumaImpuesto,
+          sumaIVA:sumaIVA,
           taxRate: impuestoRate,
         });
       });
       response.data = impuestosFound;
       let impuestosFoundClear = {};
       impuestosFound.forEach((elemento, index) => {
-        if (elemento.taxRate) {
-          if (impuestosFoundClear.hasOwnProperty(elemento.taxRate)) {
-            impuestosFoundClear[elemento.taxRate]["total"] =
-              impuestosFoundClear[elemento.taxRate].total +
-              elemento.sumaImpuesto;
-            impuestosFoundClear[elemento.taxRate]["hijos"].push(elemento);
-          } else {
-            impuestosFoundClear[elemento.taxRate] = { total: 0, hijos: [] };
-            impuestosFoundClear[elemento.taxRate]["total"] =
-              elemento.sumaImpuesto;
-            impuestosFoundClear[elemento.taxRate]["hijos"].push(elemento);
+          if (elemento.taxRate) {
+              if (impuestosFoundClear.hasOwnProperty(elemento.taxRate)) {
+                  impuestosFoundClear[elemento.taxRate]["total"] =
+                      impuestosFoundClear[elemento.taxRate].total +
+                      elemento.sumaImpuesto;
+                  impuestosFoundClear[elemento.taxRate]["hijos"].push(elemento);
+                  impuestosFoundClear[elemento.taxRate]["iva"] =
+                      impuestosFoundClear[elemento.taxRate]["iva"] + elemento.sumaIVA; // Aquí se corrige la asignación del IVA
+              } else {
+                  impuestosFoundClear[elemento.taxRate] = { total: 0, hijos: [], iva: 0 };
+                  impuestosFoundClear[elemento.taxRate]["total"] =
+                      elemento.sumaImpuesto;
+                  impuestosFoundClear[elemento.taxRate]["hijos"].push(elemento);
+                  impuestosFoundClear[elemento.taxRate]["iva"] =
+                      elemento.sumaIVA;
+              }
           }
-        }
       });
-      // log.debug({ title:'impuestosFoundClear', details:impuestosFoundClear });
+      log.debug({ title:'impuestosFoundClear', details:impuestosFoundClear });
 
       response.dataClear = impuestosFoundClear;
       response.success = true;
@@ -2151,12 +2160,16 @@ define([
     try {
       let impuestosIds = Object.keys(impuestos);
       let sumaImpuestos = 0;
+      let sumaIVA=0;
       impuestosIds.forEach((element, index) => {
         log.debug({ title: "retencion: " + index, details: element });
         sumaImpuestos = sumaImpuestos * 1 + impuestos[element].total * 1;
+        sumaIVA = sumaIVA * 1 + impuestos[element].iva * 1;
+        log.debug({title:"Impuestos Element:",details:impuestos[element]})
       });
       sumaImpuestos = sumaImpuestos.toFixed(2);
       response.totalImpuestos = sumaImpuestos;
+      response.totalIVA=sumaIVA;
       response.success = true;
     } catch (error) {
       log.error({ title: "suma_impuestos", details: error });
